@@ -1,0 +1,2 @@
+vless://00000000-0000-4000-8000-000000000001@192.0.2.1:443?security=reality&type=tcp&sni=www.example.com&pbk=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&sid=001122&flow=xtls-rprx-vision#Example-REALITY
+vless://00000000-0000-4000-8000-000000000002@example.com:443?security=tls&type=ws&path=%2Fvless&host=cdn.example.com#Example-WebSocket

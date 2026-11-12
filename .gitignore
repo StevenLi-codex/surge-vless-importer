@@ -1,0 +1,10 @@
+vendor/
+.venv/
+__pycache__/
+.DS_Store
+output/
+*.list
+*.yaml
+*.yml
+!.github/workflows/*.yml
+!requirements.txt
