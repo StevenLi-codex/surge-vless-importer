@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="referrer" content="no-referrer">
+  <title>VLESS 订阅导入</title>
+  <style>
+    :root { color-scheme: light dark; --bg:#f5f5f7; --surface:#fff; --text:#1d1d1f; --muted:#626269; --line:#dedee4; --field:#f8f8fa; --blue:#0067cf; --blue-soft:#edf4ff; --warn:#805000; --warn-bg:#fff6e5; --danger:#b42318; --danger-bg:#fff0ee; --ok:#28734c; }
+    @media (prefers-color-scheme:dark) {
+      :root { --bg:#101012; --surface:#1c1c1f; --text:#f5f5f7; --muted:#aaaab3; --line:#3b3b42; --field:#242428; --blue:#78b7ff; --blue-soft:#202f44; --warn:#f0ca80; --warn-bg:#322919; --danger:#ffb4ac; --danger-bg:#3b2525; --ok:#8ad6ac; }
+    }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; -webkit-text-size-adjust:100%; }
+    main { max-width:720px; margin:0 auto; padding:calc(28px + env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) calc(32px + env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left)); }
+    header { margin:0 2px 24px; }
+    .eyebrow { margin:0 0 8px; color:var(--muted); font-size:12px; font-weight:600; letter-spacing:.09em; }
+    h1 { margin:0 0 9px; font-size:clamp(25px,6.8vw,34px); line-height:1.25; letter-spacing:-.04em; font-weight:700; }
+    h2 { margin:0; font-size:18px; line-height:1.4; font-weight:600; }
+    p { margin:8px 0 0; }
+    .subtle { color:var(--muted); font-size:14px; }
+    .card { margin-bottom:16px; padding:20px; border-radius:16px; background:var(--surface); border:1px solid var(--line); }
+    .section-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; }
+    .badge { flex-shrink:0; padding:3px 9px; border-radius:99px; background:var(--field); color:var(--muted); font-size:12px; }
+    .badge.ready { color:var(--ok); }
+    .stats { display:grid; grid-template-columns:92px minmax(0,1fr); gap:18px; align-items:center; }
+    .count { font-size:38px; line-height:1.15; font-weight:600; letter-spacing:-.04em; font-variant-numeric:tabular-nums; }
+    .count-label { color:var(--muted); font-size:12px; margin-top:4px; }
+    .stat-detail { padding-left:18px; border-left:1px solid var(--line); min-width:0; }
+    .stat-detail p { margin:3px 0; font-size:13px; color:var(--muted); overflow-wrap:anywhere; }
+    .stat-detail strong { color:var(--text); font-weight:500; }
+    label { display:block; margin-bottom:8px; font-size:14px; font-weight:600; }
+    textarea, input { display:block; width:100%; min-width:0; margin:0; padding:13px; border:1px solid var(--line); border-radius:10px; background:var(--field); color:var(--text); font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    textarea { resize:vertical; min-height:150px; }
+    textarea::placeholder { color:var(--muted); opacity:1; }
+    textarea[readonly], input[readonly] { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:16px; }
+    #policy-group { min-height:90px; }
+    .hint { margin-top:8px; color:var(--muted); font-size:12px; }
+    .actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; }
+    button { min-height:46px; padding:10px 16px; border:1px solid var(--line); border-radius:10px; background:var(--field); color:var(--text); font:600 15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; cursor:pointer; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+    button.primary { flex:1; min-width:120px; background:#0067cf; color:#fff; border-color:#0067cf; }
+    button.danger { color:var(--danger); background:transparent; }
+    button:disabled { opacity:.45; cursor:default; }
+    button:not(:disabled):active { transform:translateY(1px); }
+    :focus-visible { outline:3px solid var(--blue); outline-offset:3px; }
+    textarea:focus, input:focus { outline:2px solid var(--blue); outline-offset:2px; }
+    .notice { padding:12px 14px; margin-top:14px; border-radius:10px; background:var(--blue-soft); color:var(--text); font-size:13px; overflow-wrap:anywhere; white-space:pre-wrap; }
+    .notice.warning { background:var(--warn-bg); color:var(--warn); }
+    .notice.error { background:var(--danger-bg); color:var(--danger); }
+    [hidden] { display:none !important; }
+    #feedback { margin:0 0 16px; }
+    .messages { margin:0; padding-left:18px; }
+    .messages li + li { margin-top:6px; }
+    .output-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:18px 0 8px; }
+    .output-head:first-of-type { margin-top:0; }
+    .output-head label { margin:0; }
+    .copy { min-width:64px; min-height:44px; padding:8px 12px; color:var(--blue); background:transparent; }
+    ol.steps { list-style:none; counter-reset:step; margin:16px 0 0; padding:0; }
+    .steps li { counter-increment:step; display:flex; gap:12px; align-items:flex-start; margin-top:14px; font-size:14px; }
+    .steps li::before { content:counter(step); flex:0 0 24px; height:24px; border-radius:50%; background:var(--field); text-align:center; color:var(--muted); font-size:12px; font-weight:600; line-height:24px; }
+    .steps strong { font-weight:600; }
+    code { font:inherit; color:var(--text); overflow-wrap:anywhere; }
+    footer { padding:0 5px; color:var(--muted); font-size:12px; line-height:1.75; }
+    @media (min-width:600px) { main { padding-top:48px; } .card { padding:24px; } }
+    @media (prefers-reduced-motion:reduce) { button:not(:disabled):active { transform:none; } }
+  </style>
+</head>
+<body>
+<main id="app" aria-busy="true">
+  <header>
+    <p class="eyebrow">SURGE iOS · 本机管理 · BETA</p>
+    <h1>VLESS 订阅导入</h1>
+    <p class="subtle">在本机转换节点，供 Surge 策略组引用。无需自建服务器。</p>
+    <p class="hint">测试版：尚未完成 Surge iOS 真机验收，需确认本机列表与策略组刷新均正常。</p>
+  </header>
+
+  <div id="feedback" class="notice" role="status" aria-live="polite" aria-atomic="true" hidden></div>
+
+  <section class="card" aria-labelledby="status-title">
+    <div class="section-head">
+      <h2 id="status-title">节点状态</h2>
+      <span id="state-badge" class="badge">读取中</span>
+    </div>
+    <div class="stats">
+      <div><div id="node-count" class="count">—</div><div class="count-label">可用节点</div></div>
+      <div class="stat-detail">
+        <p>最近更新</p><p><strong id="updated-time">尚未读取</strong></p>
+        <p id="duplicate-count">重复节点：—</p>
+      </div>
+    </div>
+    <div id="warnings-box" class="notice warning" hidden><strong>需要留意</strong><ul id="warnings" class="messages"></ul></div>
+    <div id="notes-box" class="notice" hidden><ul id="notes" class="messages"></ul></div>
+  </section>
+
+  <section class="card" aria-labelledby="import-title">
+    <div class="section-head"><h2 id="import-title">导入来源</h2><span class="badge">VLESS</span></div>
+    <form id="import-form" autocomplete="off">
+      <label for="source">订阅地址或节点内容</label>
+      <textarea id="source" name="source" rows="6" placeholder="粘贴 HTTPS 订阅地址，或 VLESS 链接、YAML / JSON 内容" aria-describedby="source-hint" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done" required></textarea>
+      <p id="source-hint" class="hint">仅提交到本机模块；订阅地址由 Surge 获取。页面不保存输入，成功后立即清空。</p>
+      <div class="actions">
+        <button id="import-button" class="primary" type="submit" disabled>导入并保存</button>
+        <button id="refresh-button" type="button" disabled>刷新订阅</button>
+        <button id="clear-button" class="danger" type="button" disabled>清除</button>
+      </div>
+    </form>
+    <p class="hint">刷新使用已保存来源；粘贴的静态内容需重新导入才能变更。自动更新失败时保留上次有效节点并发送 Surge 通知；手动刷新失败会在此提示。</p>
+  </section>
+
+  <section class="card" aria-labelledby="output-title">
+    <h2 id="output-title">接入 Surge</h2>
+    <p class="subtle">模块不会修改策略组，需手动添加一行。</p>
+    <div class="output-head"><label for="policy-group">生成的策略组配置</label><button id="copy-policy" class="copy" type="button" disabled>复制</button></div>
+    <textarea id="policy-group" rows="3" readonly spellcheck="false" aria-describedby="policy-hint" placeholder="导入成功后显示"></textarea>
+    <p id="policy-hint" class="hint">将这一行添加到当前配置的 [Proxy Group] 下。</p>
+    <div class="output-head"><label for="download-url">本机节点列表地址</label><button id="copy-url" class="copy" type="button" disabled>复制</button></div>
+    <input id="download-url" type="text" readonly spellcheck="false" aria-describedby="url-hint" placeholder="导入成功后显示">
+    <p id="url-hint" class="hint">仅供本机 Surge 引用；不要公开分享包含私密标识的列表地址。</p>
+  </section>
+
+  <section class="card" aria-labelledby="usage-title">
+    <h2 id="usage-title">三步使用</h2>
+    <ol class="steps">
+      <li><div><strong>启用模块</strong><br>使用 Surge iOS 6+，启用本模块并保持 Surge 开启，在 Safari 打开 <code>http://surge-vless.invalid/</code>。</div></li>
+      <li><div><strong>导入并检查</strong><br>粘贴来源，点「导入并保存」，检查节点数量与警告。</div></li>
+      <li><div><strong>添加一行配置</strong><br>复制生成的策略组配置到 [Proxy Group]，保存并重新加载 Surge 配置，再选择节点。</div></li>
+    </ol>
+  </section>
+  <footer>
+    <p>此 HTTP 地址由 Surge 在本机拦截处理，不是公网管理网站。请保持 Surge 开启；关闭后页面与本机列表不可用。页面不使用浏览器存储、Cookie 或离线缓存。</p>
+  </footer>
+  <noscript><p class="notice warning">请在 Safari 中允许 JavaScript，以使用本机管理功能。</p></noscript>
+</main>
+<script>
+'use strict';
+(function () {
+  const byId = function (id) { return document.getElementById(id); };
+  const app = byId('app');
+  const source = byId('source');
+  const feedback = byId('feedback');
+  const importButton = byId('import-button');
+  const refreshButton = byId('refresh-button');
+  const clearButton = byId('clear-button');
+  const policy = byId('policy-group');
+  const download = byId('download-url');
+  const copyPolicy = byId('copy-policy');
+  const copyURL = byId('copy-url');
+  let busy = false;
+  let configured = false;
+
+  function updateControls() {
+    app.setAttribute('aria-busy', String(busy));
+    source.disabled = busy;
+    importButton.disabled = busy || !source.value.trim();
+    refreshButton.disabled = busy || !configured;
+    clearButton.disabled = busy || !configured;
+    copyPolicy.disabled = busy || !policy.value;
+    copyURL.disabled = busy || !download.value;
+  }
+  function message(text, kind) {
+    feedback.textContent = text;
+    feedback.className = 'notice' + (kind ? ' ' + kind : '');
+    feedback.hidden = !text;
+  }
+  function list(id, boxId, items) {
+    const target = byId(id);
+    target.textContent = '';
+    const safeItems = Array.isArray(items) ? items.filter(function (item) { return typeof item === 'string' && item; }) : [];
+    safeItems.forEach(function (item) {
+      const li = document.createElement('li');
+      li.textContent = item;
+      target.appendChild(li);
+    });
+    byId(boxId).hidden = safeItems.length === 0;
+  }
+  function natural(value) {
+    return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? value : 0;
+  }
+  function render(state) {
+    if (!state || typeof state !== 'object' || typeof state.configured !== 'boolean') {
+      throw new Error('本机状态响应无效，请保持 Surge 开启后重试。');
+    }
+    configured = state.configured;
+    byId('node-count').textContent = String(natural(state.count));
+    byId('state-badge').textContent = configured ? '已配置' : '未配置';
+    byId('state-badge').className = 'badge' + (configured ? ' ready' : '');
+    const date = typeof state.updatedAt === 'number' && state.updatedAt > 0 ? new Date(state.updatedAt) : null;
+    byId('updated-time').textContent = date && Number.isFinite(date.getTime()) ? date.toLocaleString('zh-CN', { hour12: false }) : '尚未更新';
+    byId('duplicate-count').textContent = '已去重：' + natural(state.duplicates) + ' 个';
+    policy.value = configured && typeof state.policyGroup === 'string' ? state.policyGroup : '';
+    download.value = configured && typeof state.downloadURL === 'string' ? state.downloadURL : '';
+    list('warnings', 'warnings-box', state.warnings);
+    list('notes', 'notes-box', state.notes);
+  }
+  async function request(path, body) {
+    const controller = new AbortController();
+    const timer = setTimeout(function () { controller.abort(); }, 90000);
+    const options = {
+      method: body === undefined ? 'GET' : 'POST',
+      headers: { 'X-Vless-Local': '1' },
+      credentials: 'omit', cache: 'no-store', mode: 'same-origin', redirect: 'error',
+      signal: controller.signal
+    };
+    if (body !== undefined) {
+      options.headers['Content-Type'] = 'application/json';
+      options.body = JSON.stringify(body);
+    }
+    try {
+      const response = await fetch(path, options);
+      let result;
+      try { result = await response.json(); }
+      catch (_) { throw new Error('本机响应无法读取，请确认 Surge 与模块已启用。'); }
+      if (!response.ok || (result && typeof result.error === 'string')) {
+        throw new Error(result && typeof result.error === 'string' ? result.error : '操作失败，请稍后重试。');
+      }
+      return result;
+    } catch (error) {
+      if (error && error.name === 'AbortError') throw new Error('请求超时。保存结果尚未确认，请保持 Surge 开启并重新打开页面检查。');
+      if (error instanceof TypeError) throw new Error('无法连接本机模块，请确认 Surge 与模块已启用。');
+      throw error;
+    } finally { clearTimeout(timer); }
+  }
+  async function readStatus() { render(await request('/api/status')); }
+  async function run(action, label, successText) {
+    if (busy) return;
+    busy = true;
+    updateControls();
+    message(label);
+    try {
+      await action();
+      message(successText);
+    } catch (error) {
+      message(error instanceof Error ? error.message : '操作失败，请稍后重试。', 'error');
+    } finally {
+      busy = false;
+      updateControls();
+    }
+  }
+  async function save(path, body, clearInput) {
+    try { await request(path, body); }
+    catch (error) {
+      // Re-read cached-node warnings after a failed refresh, without hiding its error.
+      try { await readStatus(); } catch (_) { /* Keep the previous known state. */ }
+      throw error;
+    }
+    if (clearInput) source.value = '';
+    try { await readStatus(); }
+    catch (_) {
+      byId('state-badge').textContent = '待确认';
+      byId('state-badge').className = 'badge';
+      throw new Error('操作已保存，但状态读取失败。请保持 Surge 开启并重新打开页面确认。');
+    }
+  }
+  async function copy(field) {
+    if (busy || !field.value) return;
+    await run(async function () {
+      let copied = false;
+      if (window.isSecureContext && navigator.clipboard && navigator.clipboard.writeText) {
+        try { await navigator.clipboard.writeText(field.value); copied = true; } catch (_) { /* HTTP or permission restriction: use selection. */ }
+      }
+      if (!copied) {
+        field.focus();
+        field.select();
+        field.setSelectionRange(0, field.value.length);
+        try { copied = document.execCommand('copy'); } catch (_) { /* Selection remains available. */ }
+      }
+      if (!copied) throw new Error('已选中内容，请长按所选文字并选择「拷贝」。');
+    }, '正在复制…', '已复制。');
+  }
+  source.addEventListener('input', updateControls);
+  byId('import-form').addEventListener('submit', function (event) {
+    event.preventDefault();
+    if (!source.value.trim()) { source.focus(); return; }
+    run(function () { return save('/api/import', { source: source.value.trim() }, true); }, '正在导入，请稍候…', '已导入并保存，输入已清空。请检查警告并添加策略组配置。');
+  });
+  refreshButton.addEventListener('click', function () {
+    run(function () { return save('/api/refresh', {}, false); }, '正在刷新订阅…', '刷新完成，请检查节点状态与警告。');
+  });
+  clearButton.addEventListener('click', function () {
+    if (busy || !window.confirm('清除本机已保存来源与节点？现有策略组引用将不可用；Surge 配置中的手动添加行不会被删除。')) return;
+    run(function () { return save('/api/clear', {}, true); }, '正在清除…', '本机来源与节点已清除。如不再使用，请手动移除 Surge 中的策略组配置行。');
+  });
+  copyPolicy.addEventListener('click', function () { copy(policy); });
+  copyURL.addEventListener('click', function () { copy(download); });
+  run(readStatus, '正在读取本机状态…', '');
+})();
+</script>
+</body>
+</html>

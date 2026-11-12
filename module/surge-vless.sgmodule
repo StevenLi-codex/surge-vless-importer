@@ -1,0 +1,16 @@
+#!name=VLESS 订阅导入 · iOS Beta
+#!desc=免服务器，本机转换 VLESS 订阅。开启 Surge 后用 Safari 打开 http://surge-vless.invalid/ 。需手动添加生成的策略组引用；不是整份配置。需 Surge iOS 6.0+，尚需真机验证。
+#!category=订阅管理
+#!system=ios
+
+[General]
+force-http-engine-hosts = %APPEND% surge-vless.invalid:80
+
+[Host]
+surge-vless.invalid = 127.0.0.1
+
+[Rule]
+DOMAIN,surge-vless.invalid,REJECT
+
+[Script]
+VLESS Local Importer = type=http-request,pattern=^http://surge-vless\.invalid(?::80)?(?:/|$),script-path=https://raw.githubusercontent.com/StevenLi-codex/surge-vless-importer/main/module/surge-vless.js,requires-body=true,max-size=2097152,timeout=50,engine=webview,script-update-interval=86400

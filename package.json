@@ -1,0 +1,17 @@
+{
+  "name": "surge-vless-importer",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Surge iOS local VLESS subscription module",
+  "scripts": {
+    "test": "node --test ios/tests/*.test.js",
+    "build": "node ios/build.js",
+    "check": "npm run build && npm test"
+  },
+  "dependencies": {
+    "yaml": "2.9.1"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}
